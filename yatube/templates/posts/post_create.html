@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block title %}
+  {% if post_obj %}
+    Редактировать пост
+  {% else %}
+    Добавить пост
+  {% endif %} 
+{% endblock %}
+{% block content %}
+  <div class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-md-8 p-5">
+        <div class="card">
+          <div class="card-header">
+            {% if post_obj %}
+              Редактировать пост
+            {% else %}
+              Новый пост
+            {% endif %}                    
+          </div>
+          <div class="card-body">
+            {% load user_filters %}
+              {% if form.errors %}
+                {% for field in form %} 
+                  {% for error in field.errors %}            
+                    <div class="alert alert-danger">
+                      {{ error|escape }}
+                    </div>
+                  {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                  <div class="alert alert-danger">
+                    {{ error|escape }}
+                  </div>
+                {% endfor %}
+              {% endif %}
+              {% if post_obj %}
+                <form method="post" enctype="multipart/form-data" action="{% url 'posts:post_edit' post_obj.pk %}">
+              {% else %}
+                <form method="post" enctype="multipart/form-data" action="{% url 'posts:post_create' %}">
+              {% endif %}
+              {% csrf_token %}
+            
+              <div class="form-group row my-3 p-3">
+                <label for="id_text">
+                  {{ form.text.label }}                  
+                  <span class="required text-danger" >*</span>                  
+                </label>
+                {{ form.text }}                
+                <small id="id_text-help" class="form-text text-muted">
+                  {{ form.text.help_text }}
+                </small>                  
+              </div>            
+              <div class="form-group row my-3 p-3">
+                <label for="id_group">
+                  {{ form.group.label }}                  
+                </label>
+                {{ form.group }}
+                <small id="id_group-help" class="form-text text-muted">
+                  {{ form.group.help_text }}
+                </small>
+              </div>
+              <div class="form-group row my-3 p-3">
+                <label for="id_image">
+                  {{ form.image.label }}                      
+                </label>
+                {{ form.image }} 
+                <small id="id_image-help" class="form-text text-muted">
+                  {{ form.image.help_text }}
+                </small>                     
+              </div>
+              <div class="d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary">
+                  {% if post_obj %}
+                    Сохранить
+                  {% else %}
+                    Добавить
+                  {% endif %}               
+                </button> 
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
