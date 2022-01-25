@@ -113,6 +113,7 @@ class CacheTests(TestCase):
         self.author = CacheTests.user
         self.author_client = Client()
         self.author_client.force_login(self.author)
+        cache.clear()
 
     def test_cache_index_page(self):
         """Содержимое главной страницы сайта кешируется."""
