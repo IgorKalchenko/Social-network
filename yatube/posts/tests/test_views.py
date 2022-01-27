@@ -83,6 +83,7 @@ class PostPagesTests(TestCase):
             reverse('posts:post_create'): 'posts/post_create.html',
             (reverse('posts:post_edit', kwargs={
                 'post_id': self.post.id})): 'posts/post_create.html',
+            reverse('posts:follow_index'): 'posts/follow.html',
         }
         for reverse_name, template in templates_pages_names.items():
             with self.subTest(reverse_name=reverse_name):
@@ -297,10 +298,9 @@ class FollowTests(TestCase):
 
     def test_authorized_can_unfollow(self):
         """Авторизованные пользователи могут отписываться друг от друга"""
-        self.user_client.get(
-            reverse('posts:profile_follow', kwargs={
-                'username': FollowTests.author.username
-            })
+        Follow.objects.create(
+            author=FollowTests.author,
+            user=FollowTests.user
         )
         count_follow = Follow.objects.count()
         self.user_client.get(
@@ -335,10 +335,9 @@ class FollowTests(TestCase):
         another_user = User.objects.create_user(username='another')
         another_client = Client()
         another_client.force_login(another_user)
-        self.user_client.get(
-            reverse('posts:profile_follow', kwargs={
-                'username': FollowTests.author.username
-            })
+        Follow.objects.create(
+            author=FollowTests.author,
+            user=FollowTests.user
         )
         new_post = Post.objects.create(
             text='Текст для проверки подписки',
