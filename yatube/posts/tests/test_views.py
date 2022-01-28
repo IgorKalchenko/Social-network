@@ -90,12 +90,7 @@ class PostPagesTests(TestCase):
                 response = self.author_client.get(reverse_name)
                 self.assertTemplateUsed(response, template)
 
-    def test_posts_index_correct_context(self):
-        """Шаблон index сформирован с правильным контекстом."""
-        response = self.author_client.get(reverse('posts:index'))
-        # Взяли первый элемент из списка и проверили, что его содержание
-        # совпадает с ожидаемым
-        first_object = response.context['page_obj'][0]
+    def _context_checks(self, response, first_object):
         post_text_0 = first_object.text
         post_author_0 = first_object.author
         post_group_0 = first_object.group
@@ -104,7 +99,15 @@ class PostPagesTests(TestCase):
         self.assertEqual(post_author_0, PostPagesTests.user)
         self.assertEqual(post_group_0, PostPagesTests.group)
         self.assertEqual(post_image_0, PostPagesTests.post.image)
-        self.assertIsInstance(response.context['page_obj'], Page)
+
+    def test_posts_index_correct_context(self):
+        """Шаблон index сформирован с правильным контекстом."""
+        response = self.author_client.get(reverse('posts:index'))
+        # Взяли первый элемент из списка и проверили, что его содержание
+        # совпадает с ожидаемым
+        first_object = response.context['page_obj'][0]
+        PostPagesTests._context_checks(self, response, first_object)
+        self.assertIsInstance(response.context.get('page_obj'), Page)
 
     def test_group_list_correct_context(self):
         """Шаблон group_list сформирован с правильным контекстом."""
@@ -114,16 +117,9 @@ class PostPagesTests(TestCase):
             })
         )
         first_object = response.context['page_obj'][0]
-        post_text_0 = first_object.text
-        post_author_0 = first_object.author
-        post_group_0 = first_object.group
-        post_image_0 = first_object.image
-        self.assertEqual(post_text_0, PostPagesTests.post.text)
-        self.assertEqual(post_author_0, PostPagesTests.user)
-        self.assertEqual(post_group_0, PostPagesTests.group)
-        self.assertEqual(post_image_0, PostPagesTests.post.image)
-        self.assertIsInstance(response.context.get('page_obj'), Page)
+        PostPagesTests._context_checks(self, response, first_object)
         self.assertEqual(response.context.get('group'), PostPagesTests.group)
+        self.assertIsInstance(response.context.get('page_obj'), Page)
 
     def test_profile_correct_context(self):
         """Шаблон profile сформирован с правильным контекстом."""
@@ -134,14 +130,7 @@ class PostPagesTests(TestCase):
         )
         all_posts = PostPagesTests.user.posts.all()
         first_object = response.context['page_obj'][0]
-        post_text_0 = first_object.text
-        post_author_0 = first_object.author
-        post_group_0 = first_object.group
-        post_image_0 = first_object.image
-        self.assertEqual(post_text_0, PostPagesTests.post.text)
-        self.assertEqual(post_author_0, PostPagesTests.user)
-        self.assertEqual(post_group_0, PostPagesTests.group)
-        self.assertEqual(post_image_0, PostPagesTests.post.image)
+        PostPagesTests._context_checks(self, response, first_object)
         self.assertIsInstance(response.context.get('page_obj'), Page)
         self.assertEqual(response.context.get('user_obj'), PostPagesTests.user)
         self.assertEqual(
@@ -156,14 +145,7 @@ class PostPagesTests(TestCase):
             })
         )
         first_object = response.context['post_obj']
-        post_text_0 = first_object.text
-        post_author_0 = first_object.author
-        post_group_0 = first_object.group
-        post_image_0 = first_object.image
-        self.assertEqual(post_text_0, PostPagesTests.post.text)
-        self.assertEqual(post_author_0, PostPagesTests.user)
-        self.assertEqual(post_group_0, PostPagesTests.group)
-        self.assertEqual(post_image_0, PostPagesTests.post.image)
+        PostPagesTests._context_checks(self, response, first_object)
         self.assertEqual(response.context.get('post_obj'), PostPagesTests.post)
 
     def test_post_create_correct_context(self):
@@ -329,8 +311,7 @@ class FollowTests(TestCase):
 
     def test_follow_index_contains_new_posts(self):
         """
-        Новая запись пользователя появляется в ленте подписчиков
-        и не появляется в ленте тех, кто на него не подписан.
+        Новая запись пользователя появляется в ленте подписчиков.
         """
         another_user = User.objects.create_user(username='another')
         another_client = Client()
@@ -349,9 +330,26 @@ class FollowTests(TestCase):
         self.assertIn(
             new_post, response.context.get('page_obj')
         )
-        response_2 = another_client.get(reverse(
+
+    def test_follow_index_do_not_contain_other_posts(self):
+        """
+        Новая запись пользователя не появляется в ленте тех,
+        кто на него не подписан.
+        """
+        another_user = User.objects.create_user(username='another')
+        another_client = Client()
+        another_client.force_login(another_user)
+        Follow.objects.create(
+            author=FollowTests.author,
+            user=FollowTests.user
+        )
+        new_post = Post.objects.create(
+            text='Текст для проверки подписки',
+            author=FollowTests.author
+        )
+        response = another_client.get(reverse(
             'posts:follow_index'
         ))
         self.assertNotIn(
-            new_post, response_2.context.get('page_obj')
+            new_post, response.context.get('page_obj')
         )

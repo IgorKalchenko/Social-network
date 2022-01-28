@@ -41,10 +41,10 @@ def profile(request, username):
     user_posts = user_obj.posts.all()
     posts_number = user_posts.count()
     current_user = request.user
-    if user_obj.following.filter(user=current_user.id).exists():
-        following = True
+    if current_user.is_authenticated:
+        following = user_obj.following.filter(user=current_user.id).exists()
     else:
-        following = False
+        following = None
     context = {
         'page_obj': paginator(request, user_posts),
         'user_obj': user_obj,
@@ -137,10 +137,9 @@ def profile_follow(request, username):
 @login_required
 def profile_unfollow(request, username):
     author = get_object_or_404(User, username=username)
-    already_followed = User.objects.filter(following__user=request.user)
-    if request.user != author and author in already_followed:
-        Follow.objects.filter(
-            author=author.id,
-            user=request.user.id
-        ).delete()
+    follow_obj = Follow.objects.filter(
+        user=request.user.id, author=author.id
+    )
+    if request.user != author and follow_obj.exists():
+        follow_obj.delete()
     return redirect('posts:profile', username)

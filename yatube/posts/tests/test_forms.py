@@ -149,7 +149,7 @@ class CommentFormTests(TestCase):
         self.auth_client.force_login(self.auth)
 
     def test_comment_form(self):
-        """Валидная форма создает запись в Comments."""
+        """Валидная форма создает запись в Comment."""
         comments_count = Comment.objects.count()
         form_data = {
             'text': 'Текст комментария test',
@@ -174,14 +174,14 @@ class CommentFormTests(TestCase):
         ))
 
     def unauth_user_can_not_create_comment(self):
-        """Неавторизованный пользователь не может создать запись в Post."""
+        """Неавторизованный пользователь не может создать запись в Comment."""
         comments_count = Comment.objects.count()
         form_data = {
             'text': 'Текст комментария не существует',
             'post': CommentFormTests.post,
         }
         post_id = CommentFormTests.post.id
-        self.unauth_client.post(
+        response = self.unauth_client.post(
             reverse('posts:add_comment', kwargs={
                 'post_id': post_id
             }),
@@ -189,3 +189,8 @@ class CommentFormTests(TestCase):
             follow=True
         )
         self.assertEqual(Comment.objects.count(), comments_count)
+        first_redirect = reverse('users:login')
+        next_redirect = reverse('posts:add_comment')
+        self.assertRedirects(
+            response, first_redirect + f'?next={next_redirect}'
+        )
